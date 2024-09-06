@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <sstream>
 
 #define MSGBUFSIZE 256
 
@@ -85,6 +86,9 @@ void receive(std::string_view group, int port) {
     exit(1);    
   }
 
+  std::array<char,100> ip_ad {0};
+  GetPrimaryIp(ip_ad.data(), ip_ad.size());
+
   // now just enter a read-print loop
   std::array<char,20> sender_ip;
   std::array<char,MSGBUFSIZE> msgbuf;
@@ -104,7 +108,7 @@ void receive(std::string_view group, int port) {
     }
     msgbuf[nbytes] = '\0';
     const char* p = inet_ntop(AF_INET, &peer_addr.sin_addr, sender_ip.data(), sender_ip.size());
-    printf("got from %s: %s\n", sender_ip.data(), msgbuf.data());
+    printf("my ip: %s, got from: %s: %s\n", ip_ad.data(), sender_ip.data(), msgbuf.data());
   }
 }
 
@@ -148,9 +152,6 @@ void send(std::string_view group, int port) {
 }
 
 int main(int argc, char *argv[]) {
-  std::array<char,100> ip_ad {0};
-  GetPrimaryIp(ip_ad.data(), ip_ad.size());
-  printf("IP: %s\n", ip_ad.data());
 
   std::string group = "239.255.255.250"; // e.g. 239.255.255.250 for SSDP
   int port = 1900; // 0 if error, which is an invalid port
