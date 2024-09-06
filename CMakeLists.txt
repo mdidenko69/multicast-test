@@ -16,3 +16,7 @@ link_directories ( ${Boost_LIBRARY_DIRS} )
 
 add_executable(multicast_test multicast_test.cpp)
 #target_link_libraries(discovery_test ${Boost_LIBRARIES})
+
+
+add_executable(multicast_asio_test multicast_asio_test.cpp)
+target_link_libraries(multicast_asio_test ${Boost_LIBRARIES})
