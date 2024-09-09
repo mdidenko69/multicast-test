@@ -121,7 +121,7 @@ void receive(std::string_view group, int port) {
     msgbuf[nbytes] = '\0';
     // std::cout << ntohl(my_ip.s_addr) << "  " << ntohl(peer_addr.sin_addr.s_addr) << "\n";
     if ( ntohl(my_ip.s_addr) == ntohl(peer_addr.sin_addr.s_addr) ) {
-      return;
+      continue;
     }
     const char* p = inet_ntop(AF_INET, &peer_addr.sin_addr, sender_ip.data(), sender_ip.size());
     printf("my ip: %s, got from: %s: %s\n", my_ip_s.c_str(), sender_ip.data(), msgbuf.data());
@@ -131,6 +131,9 @@ void receive(std::string_view group, int port) {
 void send(std::string_view group, int port) {
   const int delay_secs = 2;
   const char *message = "Hello, World! ";
+
+
+  std::cout << "My IP: " <<  myPrimaryIp<std::string>() << "\n";
 
   // create what looks like an ordinary UDP socket
   //
