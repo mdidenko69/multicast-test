@@ -16,12 +16,15 @@
 #include <string_view>
 #include <thread>
 #include <sstream>
+#include <iostream>
 
 #define MSGBUFSIZE 256
 
-void GetPrimaryIp(char* buffer, size_t buflen) {
-  assert(buflen >= 16);
+template<typename T> 
+T myPrimaryIp();
 
+template<>
+in_addr myPrimaryIp<in_addr>() {
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   assert(sock != -1);
 
@@ -40,11 +43,20 @@ void GetPrimaryIp(char* buffer, size_t buflen) {
   socklen_t namelen = sizeof(name);
   err = getsockname(sock, (sockaddr*) &name, &namelen);
   assert(err != -1);
+  close(sock);
 
-  const char* p = inet_ntop(AF_INET, &name.sin_addr, buffer, buflen);
+  return name.sin_addr;
+}
+
+template<>
+std::string myPrimaryIp<std::string>() {
+  in_addr a = myPrimaryIp<in_addr>();
+  std::array<char, 20> buffer;
+
+  const char* p = inet_ntop(AF_INET, &a, buffer.data(), buffer.size());
   assert(p);
 
-  close(sock);
+  return p;
 }
 
 void receive(std::string_view group, int port) {
@@ -86,8 +98,8 @@ void receive(std::string_view group, int port) {
     exit(1);    
   }
 
-  std::array<char,100> ip_ad {0};
-  GetPrimaryIp(ip_ad.data(), ip_ad.size());
+  auto my_ip_s = myPrimaryIp<std::string>();
+  auto my_ip = myPrimaryIp<in_addr>();
 
   // now just enter a read-print loop
   std::array<char,20> sender_ip;
@@ -107,8 +119,12 @@ void receive(std::string_view group, int port) {
         exit(1);    
     }
     msgbuf[nbytes] = '\0';
+    std::cout << ntohl(my_ip.s_addr) << "  " << ntohl(peer_addr.sin_addr.s_addr) << "\n";
+    // if ( ntohl(my_ip.s_addr) == ntohl(peer_addr.sin_addr.s_addr) ) {
+    //   return;
+    // }
     const char* p = inet_ntop(AF_INET, &peer_addr.sin_addr, sender_ip.data(), sender_ip.size());
-    printf("my ip: %s, got from: %s: %s\n", ip_ad.data(), sender_ip.data(), msgbuf.data());
+    printf("my ip: %s, got from: %s: %s\n", my_ip_s.c_str(), sender_ip.data(), msgbuf.data());
   }
 }
 
