@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include <boost/asio.hpp>
+#include <boost/asio/spawn.hpp>
+#include <functional>
 
 class receiver
 {
@@ -22,25 +24,22 @@ public:
     socket_.set_option(
         boost::asio::ip::multicast::join_group(multicast_address));
 
-    do_receive();
+    boost::asio::spawn(io_context, std::bind(&receiver::do_receive, this, std::placeholders::_1));
+    //do_receive();
   }
 
 private:
-  void do_receive()
+  void do_receive(boost::asio::yield_context yield)
   {
-    socket_.async_receive_from(
+    auto length = socket_.async_receive_from(
         boost::asio::buffer(data_), sender_endpoint_,
-        [this](boost::system::error_code ec, std::size_t length)
-        {
-          if (!ec)
-          {
-            std::cout << sender_endpoint_.address() << " ";
-            std::cout.write(data_.data(), length);
-            std::cout << std::endl;
+        yield);
 
-            do_receive();
-          }
-        });
+    std::cout << sender_endpoint_.address() << " ";
+    std::cout.write(data_.data(), length);
+    std::cout << std::endl;
+
+    do_receive(yield);
   }
 
   boost::asio::ip::udp::socket socket_;
@@ -58,11 +57,11 @@ public:
       timer_(io_context),
       message_count_(0)
   {
-    do_send();
+    boost::asio::spawn(io_context, std::bind(&sender::do_send, this, std::placeholders::_1));
   }
 
 private:
-  void do_send()
+  void do_send(boost::asio::yield_context yield)
   {
     std::ostringstream os;
     os << "Message " << message_count_++;
@@ -70,23 +69,15 @@ private:
 
     socket_.async_send_to(
         boost::asio::buffer(message_), endpoint_,
-        [this](boost::system::error_code ec, std::size_t /*length*/)
-        {
-          if (!ec) { // && message_count_ < max_message_count)
-            do_timeout();
-          }
-        });
+        yield);
+    do_timeout(yield);
   }
 
-  void do_timeout()
+  void do_timeout(boost::asio::yield_context yield)
   {
     timer_.expires_after(std::chrono::seconds(2));
-    timer_.async_wait(
-        [this](boost::system::error_code ec)
-        {
-          if (!ec)
-            do_send();
-        });
+    timer_.async_wait(yield);
+    do_send(yield);
   }
 
 private:

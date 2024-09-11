@@ -21,10 +21,10 @@
 #define MSGBUFSIZE 256
 
 template<typename T> 
-T myPrimaryIp();
+auto myPrimaryIp() -> T;
 
 template<>
-in_addr myPrimaryIp<in_addr>() {
+auto myPrimaryIp<in_addr>() -> in_addr {
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   assert(sock != -1);
 
@@ -49,7 +49,7 @@ in_addr myPrimaryIp<in_addr>() {
 }
 
 template<>
-std::string myPrimaryIp<std::string>() {
+auto myPrimaryIp<std::string>() -> std::string {
   in_addr a = myPrimaryIp<in_addr>();
   std::array<char, 20> buffer;
 
@@ -124,6 +124,8 @@ void receive(std::string_view group, int port) {
       continue;
     }
     const char* p = inet_ntop(AF_INET, &peer_addr.sin_addr, sender_ip.data(), sender_ip.size());
+    assert(p);
+
     printf("my ip: %s, got from: %s: %s\n", my_ip_s.c_str(), sender_ip.data(), msgbuf.data());
   }
 }
