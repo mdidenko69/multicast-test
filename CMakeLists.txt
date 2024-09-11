@@ -20,3 +20,6 @@ add_executable(multicast_test multicast_test.cpp)
 
 add_executable(multicast_asio_test multicast_asio_test.cpp)
 target_link_libraries(multicast_asio_test ${Boost_LIBRARIES})
+
+add_executable(async_system_test async_system_test.cpp)
+target_link_libraries(async_system_test ${Boost_LIBRARIES})
